@@ -158,6 +158,35 @@ body{background:#08090e;font-family:'Share Tech Mono',monospace;color:#fff;min-h
 .tt-current-row td{background:#1a1a10 !important;border-bottom:1px solid #fbbf24 !important}
 .tt-current-row td:last-child{border-color:#fbbf24}
 .tt-th-result{color:#3b82f6 !important}
+
+/* ROUND TABLES */
+.round-tables{width:100%;max-width:560px;display:none}
+.round-tables.show{display:block}
+.rt-header{text-align:center;margin-bottom:1rem;padding:.75rem 0 .25rem}
+.rt-section-title{font-family:'Orbitron',monospace;font-size:12px;font-weight:900;letter-spacing:4px;color:#fbbf24;margin-bottom:4px}
+.rt-section-sub{font-size:10px;color:#444;letter-spacing:2px}
+.rt-card{background:#0f1018;border:1px solid #1e2030;border-radius:14px;padding:1.2rem;margin-bottom:1rem;opacity:0;transform:translateY(16px);transition:opacity .4s ease,transform .4s ease}
+.rt-card.animate-in{opacity:1;transform:translateY(0)}
+.rt-card-header{display:flex;align-items:flex-start;gap:10px;margin-bottom:1rem}
+.rt-level-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:5px}
+.rt-card-meta{display:flex;flex-direction:column;gap:3px}
+.rt-label{font-size:9px;color:#555;letter-spacing:2px;font-family:'Orbitron',monospace}
+.rt-expr{font-family:'Orbitron',monospace;font-size:15px;font-weight:700;letter-spacing:2px;color:#fff}
+.rt-table-wrap{overflow-x:auto}
+.rt-table{width:100%;border-collapse:collapse;font-size:12px}
+.rt-table th{font-family:'Orbitron',monospace;font-size:8px;letter-spacing:1px;color:#555;font-weight:700;padding:5px 8px;border-bottom:1px solid #1e2030;text-align:center;white-space:nowrap}
+.rt-table td{padding:7px 8px;border-bottom:1px solid #13141e;text-align:center;font-family:'Share Tech Mono',monospace}
+.rt-table tr:last-child td{border-bottom:none}
+.rt-table tr:hover td{background:#13141e}
+.rt-val1{color:#22c55e;font-weight:700}
+.rt-val0{color:#ef4444;font-weight:700}
+.rt-step-val{color:#6b7280}
+.rt-final-col{font-family:'Orbitron',monospace;font-size:10px;font-weight:900;letter-spacing:1px}
+.rt-final-1{color:#fbbf24}
+.rt-final-0{color:#374151}
+.rt-th-step{color:#3b82f6 !important}
+.rt-th-final{color:#fbbf24 !important}
+.rt-divider{width:100%;max-width:560px;height:1px;background:#1e2030;margin:.5rem 0 1rem}
 </style>
 </head>
 <body>
@@ -226,6 +255,9 @@ body{background:#08090e;font-family:'Share Tech Mono',monospace;color:#fff;min-h
 </div>
 
 <div class="round-msg" id="round-msg"></div>
+
+<div class="rt-divider" id="rt-divider" style="display:none"></div>
+<div class="round-tables" id="round-tables"></div>
 
 <div class="score-card" id="score-card">
   <div class="score-title">&#127942; RONDA COMPLETA</div>
@@ -437,6 +469,10 @@ function startGame(){
   document.getElementById('score-card').classList.remove('show');
   document.getElementById('quiz-card').style.display='block';
   document.getElementById('round-msg').textContent='';
+  const rt = document.getElementById('round-tables');
+  rt.classList.remove('show');
+  rt.innerHTML='';
+  document.getElementById('rt-divider').style.display='none';
   renderDots();
   loadQuestion();
 }
@@ -585,14 +621,18 @@ function nextStep(){
 function endRound(){
   document.getElementById('quiz-card').style.display='none';
   document.getElementById('progress-fill').style.width='100%';
-  const sc=document.getElementById('score-card');
-  document.getElementById('final-score').textContent=score;
-  document.getElementById('final-score').style.color=score>= 80?'#22c55e':score>=40?'#fbbf24':'#ef4444';
-  document.getElementById('sc-ok').textContent=correct;
-  document.getElementById('sc-fail').textContent=incorrect;
-  document.getElementById('sc-streak').textContent=maxStreak;
-  document.getElementById('sc-level').textContent=maxLevel;
-  sc.classList.add('show');
+  buildRoundTables();
+  const delay = questions.length * 160 + 500;
+  setTimeout(()=>{
+    const sc=document.getElementById('score-card');
+    document.getElementById('final-score').textContent=score;
+    document.getElementById('final-score').style.color=score>=80?'#22c55e':score>=40?'#fbbf24':'#ef4444';
+    document.getElementById('sc-ok').textContent=correct;
+    document.getElementById('sc-fail').textContent=incorrect;
+    document.getElementById('sc-streak').textContent=maxStreak;
+    document.getElementById('sc-level').textContent=maxLevel;
+    sc.classList.add('show');
+  }, delay);
 }
 
 function updateDot(i,ok){
@@ -635,7 +675,105 @@ function toggleRef(){
   panel.classList.toggle('open');
 }
 
-// ── TRUTH TABLE ──
+// ── ROUND SUMMARY TABLES ──
+const exprSteps = {
+  'A ∧ B':          [{label:'A ∧ B',        fn:(a,b)=>a&b,                  isFinal:true}],
+  'A ∨ B':          [{label:'A ∨ B',        fn:(a,b)=>a|b,                  isFinal:true}],
+  '¬ A':            [{label:'¬A',           fn:(a)=>a?0:1,                  isFinal:true}],
+  '¬(A ∧ B)':       [{label:'A ∧ B',        fn:(a,b)=>a&b},
+                     {label:'¬(A∧B)',        fn:(a,b)=>(a&b)?0:1,           isFinal:true}],
+  '¬(A ∨ B)':       [{label:'A ∨ B',        fn:(a,b)=>a|b},
+                     {label:'¬(A∨B)',        fn:(a,b)=>(a|b)?0:1,           isFinal:true}],
+  'A ⊕ B':          [{label:'A ⊕ B',        fn:(a,b)=>a^b,                  isFinal:true}],
+  '(A ∧ B) ∨ ¬A':   [{label:'A ∧ B',        fn:(a,b)=>a&b},
+                     {label:'¬A',           fn:(a,b)=>a?0:1},
+                     {label:'(A∧B)∨¬A',     fn:(a,b)=>(a&b)|(a?0:1),       isFinal:true}],
+  '¬A ∧ ¬B':        [{label:'¬A',           fn:(a,b)=>a?0:1},
+                     {label:'¬B',           fn:(a,b)=>b?0:1},
+                     {label:'¬A ∧ ¬B',      fn:(a,b)=>(a?0:1)&(b?0:1),    isFinal:true}],
+  '¬(A ∨ B) ∨ A':   [{label:'A ∨ B',        fn:(a,b)=>a|b},
+                     {label:'¬(A∨B)',        fn:(a,b)=>(a|b)?0:1},
+                     {label:'¬(A∨B)∨A',     fn:(a,b)=>((a|b)?0:1)|a,       isFinal:true}],
+  '(A ∨ B) ∧ ¬B':   [{label:'A ∨ B',        fn:(a,b)=>a|b},
+                     {label:'¬B',           fn:(a,b)=>b?0:1},
+                     {label:'(A∨B)∧¬B',     fn:(a,b)=>(a|b)&(b?0:1),       isFinal:true}],
+  '(A ∧ B) ∨ ¬C':   [{label:'A ∧ B',        fn:(a,b,c)=>a&b},
+                     {label:'¬C',           fn:(a,b,c)=>c?0:1},
+                     {label:'(A∧B)∨¬C',     fn:(a,b,c)=>(a&b)|(c?0:1),    isFinal:true}],
+  '(A ∨ B) ∧ ¬C':   [{label:'A ∨ B',        fn:(a,b,c)=>a|b},
+                     {label:'¬C',           fn:(a,b,c)=>c?0:1},
+                     {label:'(A∨B)∧¬C',     fn:(a,b,c)=>(a|b)&(c?0:1),    isFinal:true}],
+  '¬((A ∧ B) ∨ C)': [{label:'A ∧ B',        fn:(a,b,c)=>a&b},
+                     {label:'(A∧B)∨C',      fn:(a,b,c)=>(a&b)|c},
+                     {label:'¬((A∧B)∨C)',   fn:(a,b,c)=>((a&b)|c)?0:1,    isFinal:true}],
+  'A ∨ (B ∧ C)':    [{label:'B ∧ C',        fn:(a,b,c)=>b&c},
+                     {label:'A∨(B∧C)',      fn:(a,b,c)=>a|(b&c),           isFinal:true}],
+};
+
+function buildRoundTables(){
+  const wrap = document.getElementById('round-tables');
+  wrap.innerHTML = `
+    <div class="rt-header">
+      <div class="rt-section-title">TABLAS DE VERDAD</div>
+      <div class="rt-section-sub">resumen completo de la ronda</div>
+    </div>`;
+
+  questions.forEach((q, qi) => {
+    const steps = exprSteps[q.expr] || [];
+    const varNames = Object.keys(q.vars);
+    const nVars = varNames.length;
+    const nRows = Math.pow(2, nVars);
+
+    // build table HTML
+    let tbl = '<div class="rt-table-wrap"><table class="rt-table"><thead><tr>';
+    varNames.forEach(v => { tbl += `<th>${v}</th>`; });
+    steps.forEach(s => {
+      tbl += `<th class="${s.isFinal ? 'rt-th-final' : 'rt-th-step'}">${s.label}</th>`;
+    });
+    tbl += '</tr></thead><tbody>';
+
+    for(let i = 0; i < nRows; i++){
+      const vals = [];
+      for(let b = nVars - 1; b >= 0; b--) vals.unshift((i >> b) & 1);
+      tbl += '<tr>';
+      vals.forEach(v => { tbl += `<td class="rt-val${v}">${v}</td>`; });
+      steps.forEach(s => {
+        const res = s.fn(...vals);
+        tbl += s.isFinal
+          ? `<td class="rt-final-col rt-final-${res}">${res}</td>`
+          : `<td class="rt-step-val">${res}</td>`;
+      });
+      tbl += '</tr>';
+    }
+    tbl += '</tbody></table></div>';
+
+    const card = document.createElement('div');
+    card.className = 'rt-card';
+    card.id = 'rt-card-' + qi;
+    card.innerHTML = `
+      <div class="rt-card-header">
+        <div class="rt-level-dot" style="background:${LEVEL_COLORS[q.level]}"></div>
+        <div class="rt-card-meta">
+          <div class="rt-label">PREGUNTA ${qi + 1} &middot; ${q.label}</div>
+          <div class="rt-expr">${q.expr}</div>
+        </div>
+      </div>` + tbl;
+    wrap.appendChild(card);
+  });
+
+  wrap.classList.add('show');
+  document.getElementById('rt-divider').style.display = 'block';
+
+  // stagger cards in
+  questions.forEach((_, qi) => {
+    setTimeout(() => {
+      const card = document.getElementById('rt-card-' + qi);
+      if(card) card.classList.add('animate-in');
+    }, qi * 160);
+  });
+}
+
+// ── TRUTH TABLE MODAL ──
 const exprEvaluators = {
   'A ∧ B':            (a,b)   => a&b,
   'A ∨ B':            (a,b)   => a|b,
