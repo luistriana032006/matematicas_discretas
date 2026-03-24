@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Logic Gate Quiz</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div class="header">
+  <div class="title">⚡ LOGIC GATE <span>QUIZ</span></div>
+  <div class="subtitle">Álgebra de Boole · Circuitos Lógicos · Iberoamericana</div>
+</div>
+
+<div class="progress-wrap">
+  <div class="progress-labels">
+    <span id="q-label">PREGUNTA 1 / 4</span>
+    <span id="score-label">PUNTOS: 0</span>
+  </div>
+  <div class="progress-bar"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
+  <div class="dots" id="dots"></div>
+</div>
+
+<div class="card" id="quiz-card">
+  <div class="level-badge">
+    <div class="level-dot" id="level-dot"></div>
+    <span id="level-text">NIVEL 1</span>
+  </div>
+
+  <div class="bulb-wrap">
+    <div class="bulb off" id="bulb">
+      <svg viewBox="0 0 56 56" xmlns="http://www.w3.org/2000/svg">
+        <g class="bulb-rays">
+          <line x1="28" y1="4" x2="28" y2="0" stroke="#fbbf24" stroke-width="2" stroke-linecap="round"/>
+          <line x1="44" y1="8" x2="47" y2="5" stroke="#fbbf24" stroke-width="2" stroke-linecap="round"/>
+          <line x1="52" y1="24" x2="56" y2="24" stroke="#fbbf24" stroke-width="2" stroke-linecap="round"/>
+          <line x1="44" y1="40" x2="47" y2="43" stroke="#fbbf24" stroke-width="2" stroke-linecap="round"/>
+          <line x1="12" y1="8" x2="9" y2="5" stroke="#fbbf24" stroke-width="2" stroke-linecap="round"/>
+          <line x1="4" y1="24" x2="0" y2="24" stroke="#fbbf24" stroke-width="2" stroke-linecap="round"/>
+          <line x1="12" y1="40" x2="9" y2="43" stroke="#fbbf24" stroke-width="2" stroke-linecap="round"/>
+        </g>
+        <path class="bulb-glass" d="M28 8 C18 8 12 16 12 24 C12 31 16 36 20 39 L20 44 L36 44 L36 39 C40 36 44 31 44 24 C44 16 38 8 28 8Z"/>
+        <path fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="1.2" stroke-linecap="round" d="M23 36 L23 30 Q26 27 28 30 Q30 33 33 30 L33 36"/>
+        <rect class="bulb-base" x="20" y="44" width="16" height="4" rx="1"/>
+        <rect class="bulb-base" x="21" y="48" width="14" height="3" rx="1"/>
+        <rect class="bulb-base" x="22" y="51" width="12" height="2" rx="1"/>
+      </svg>
+    </div>
+    <div class="bulb-result off" id="bulb-result">APAGADA</div>
+    <div class="bulb-label">resultado final</div>
+  </div>
+
+  <div class="expr-block">
+    <div class="expr-text" id="expr-text"></div>
+    <div class="vars-row" id="vars-row"></div>
+  </div>
+
+  <div class="steps-title">Resuelve paso a paso</div>
+  <div class="step-list" id="step-list"></div>
+
+  <div class="input-area">
+    <div class="input-question" id="input-question"></div>
+    <div class="answer-row" id="answer-row">
+      <button class="ans-btn" id="btn0" onclick="answer(0)">0</button>
+      <button class="ans-btn" id="btn1" onclick="answer(1)">1</button>
+    </div>
+  </div>
+
+  <div class="feedback" id="feedback"></div>
+  <button class="next-btn" id="next-btn" onclick="nextStep()">CONTINUAR →</button>
+</div>
+
+<div class="round-msg" id="round-msg"></div>
+
+<div class="score-card" id="score-card">
+  <div class="score-title">🏆 RONDA COMPLETA</div>
+  <div class="score-num" id="final-score"></div>
+  <div class="score-label">PUNTOS</div>
+  <div class="score-breakdown">
+    <div class="score-item"><div class="si-label">CORRECTAS</div><div class="si-val" id="sc-ok" style="color:#22c55e">0</div></div>
+    <div class="score-item"><div class="si-label">INCORRECTAS</div><div class="si-val" id="sc-fail" style="color:#ef4444">0</div></div>
+    <div class="score-item"><div class="si-label">RACHA MÁX</div><div class="si-val" id="sc-streak" style="color:#fbbf24">0</div></div>
+    <div class="score-item"><div class="si-label">NIVEL MÁX</div><div class="si-val" id="sc-level" style="color:#a855f7">1</div></div>
+  </div>
+  <button class="play-again" onclick="startGame()">↺ OTRA RONDA</button>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
