@@ -102,3 +102,23 @@ body{background:#08090e;font-family:'Share Tech Mono',monospace;color:#fff;min-h
 @keyframes bulbPop{0%{transform:scale(1)}40%{transform:scale(1.18)}100%{transform:scale(1)}}
 .bulb.on{animation:bulbPop .35s ease;filter:drop-shadow(0 0 10px #fbbf24) drop-shadow(0 0 24px #f59e0b)}
 .bulb.off{filter:none}
+
+/* REFERENCE TABLE */
+.ref-toggle{position:fixed;bottom:0;right:20px;padding:8px 16px;background:#fbbf24;color:#000;font-family:'Orbitron',monospace;font-size:10px;font-weight:900;letter-spacing:2px;border:none;border-radius:8px 8px 0 0;cursor:pointer;z-index:1000;transition:background .15s}
+.ref-toggle:hover{background:#f59e0b}
+.ref-panel{position:fixed;bottom:0;left:0;right:0;background:rgba(15,16,24,0.97);border-top:1px solid #1e2030;z-index:999;transform:translateY(100%);transition:transform .35s cubic-bezier(.4,0,.2,1)}
+.ref-panel.open{transform:translateY(0)}
+.ref-inner{max-width:700px;margin:0 auto;padding:1rem 1rem .5rem}
+.ref-title{font-family:'Orbitron',monospace;font-size:11px;font-weight:900;letter-spacing:3px;color:#fbbf24;margin-bottom:.75rem;text-align:center}
+.ref-table{width:100%;border-collapse:collapse;font-size:12px}
+.ref-table th{font-family:'Orbitron',monospace;font-size:9px;letter-spacing:2px;color:#555;font-weight:700;padding:5px 10px;border-bottom:1px solid #1e2030;text-align:center}
+.ref-table td{padding:6px 10px;border-bottom:1px solid #13141e;text-align:center;font-family:'Share Tech Mono',monospace;color:#ccc}
+.ref-table tr:last-child td{border-bottom:none}
+.ref-table tr:hover td{background:#13141e}
+.ref-op{font-family:'Orbitron',monospace;font-size:10px;font-weight:700;letter-spacing:1px}
+.ref-op.and{color:#22c55e}
+.ref-op.or{color:#3b82f6}
+.ref-op.not{color:#a855f7}
+.ref-op.nand{color:#f97316}
+.ref-op.nor{color:#ef4444}
+.ref-op.xor{color:#fbbf24}

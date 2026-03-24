@@ -87,6 +87,62 @@
   <button class="play-again" onclick="startGame()">↺ OTRA RONDA</button>
 </div>
 
+<button class="ref-toggle" onclick="toggleRef()">📋 REFERENCIA</button>
+
+<div class="ref-panel" id="ref-panel">
+  <div class="ref-inner">
+    <div class="ref-title">REFERENCIA RÁPIDA</div>
+    <table class="ref-table">
+      <thead>
+        <tr>
+          <th>OPERACIÓN</th>
+          <th>LÓGICA MATEMÁTICA</th>
+          <th>ÁLGEBRA DE BOOLE</th>
+          <th>CÓDIGO</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="ref-op and">AND</span></td>
+          <td>A ∧ B</td>
+          <td>A · B</td>
+          <td>&amp;&amp;</td>
+        </tr>
+        <tr>
+          <td><span class="ref-op or">OR</span></td>
+          <td>A ∨ B</td>
+          <td>A + B</td>
+          <td>||</td>
+        </tr>
+        <tr>
+          <td><span class="ref-op not">NOT</span></td>
+          <td>¬ A</td>
+          <td>A'</td>
+          <td>!</td>
+        </tr>
+        <tr>
+          <td><span class="ref-op nand">NAND</span></td>
+          <td>¬(A ∧ B)</td>
+          <td>(A · B)'</td>
+          <td>!(a &amp;&amp; b)</td>
+        </tr>
+        <tr>
+          <td><span class="ref-op nor">NOR</span></td>
+          <td>¬(A ∨ B)</td>
+          <td>(A + B)'</td>
+          <td>!(a || b)</td>
+        </tr>
+        <tr>
+          <td><span class="ref-op xor">XOR</span></td>
+          <td>A ⊕ B</td>
+          <td>A ⊕ B</td>
+          <td>^</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
 <script src="script.js"></script>
 </body>
 </html>

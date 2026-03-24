@@ -317,4 +317,9 @@ function setBulb(val){
   }
 }
 
+function toggleRef(){
+  const panel = document.getElementById('ref-panel');
+  panel.classList.toggle('open');
+}
+
 startGame();
