@@ -130,6 +130,34 @@ body{background:#08090e;font-family:'Share Tech Mono',monospace;color:#fff;min-h
 .ref-op.nand{color:#f97316}
 .ref-op.nor{color:#ef4444}
 .ref-op.xor{color:#fbbf24}
+
+/* TRUTH TABLE MODAL */
+.tt-btn{position:fixed;bottom:0;left:20px;padding:8px 16px;background:#3b82f6;color:#fff;font-family:'Orbitron',monospace;font-size:10px;font-weight:900;letter-spacing:2px;border:none;border-radius:8px 8px 0 0;cursor:pointer;z-index:1000;transition:background .15s}
+.tt-btn:hover{background:#2563eb}
+.tt-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:1100;display:none;align-items:center;justify-content:center;padding:16px}
+.tt-overlay.open{display:flex;animation:fadeIn .2s ease}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.tt-modal{background:#0f1018;border:1px solid #1e2030;border-radius:14px;width:100%;max-width:500px;max-height:85vh;overflow:hidden;display:flex;flex-direction:column;animation:popIn .25s cubic-bezier(.34,1.56,.64,1)}
+.tt-header{display:flex;align-items:flex-start;justify-content:space-between;padding:1rem 1.2rem;border-bottom:1px solid #1e2030;gap:10px}
+.tt-header-left{display:flex;flex-direction:column;gap:4px}
+.tt-title{font-family:'Orbitron',monospace;font-size:9px;font-weight:900;letter-spacing:3px;color:#3b82f6}
+.tt-expr-display{font-family:'Orbitron',monospace;font-size:16px;font-weight:700;color:#fff;letter-spacing:2px}
+.tt-close{background:none;border:1px solid #2a2d38;border-radius:6px;color:#666;font-size:14px;width:28px;height:28px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;flex-shrink:0;margin-top:2px}
+.tt-close:hover{border-color:#ef4444;color:#ef4444;background:#1a0d0d}
+.tt-body{overflow-y:auto;padding:1rem 1.2rem}
+.tt-table{width:100%;border-collapse:collapse;font-size:13px}
+.tt-table th{font-family:'Orbitron',monospace;font-size:9px;letter-spacing:2px;color:#555;font-weight:700;padding:6px 10px;border-bottom:1px solid #1e2030;text-align:center}
+.tt-table td{padding:8px 10px;border-bottom:1px solid #13141e;text-align:center;font-family:'Share Tech Mono',monospace}
+.tt-table tr:last-child td{border-bottom:none}
+.tt-table tr:hover td{background:#13141e}
+.tt-val1{color:#22c55e;font-weight:700}
+.tt-val0{color:#ef4444;font-weight:700}
+.tt-result-col{font-family:'Orbitron',monospace;font-size:11px;font-weight:900;letter-spacing:1px}
+.tt-result-col.r1{color:#fbbf24}
+.tt-result-col.r0{color:#444}
+.tt-current-row td{background:#1a1a10 !important;border-bottom:1px solid #fbbf24 !important}
+.tt-current-row td:last-child{border-color:#fbbf24}
+.tt-th-result{color:#3b82f6 !important}
 </style>
 </head>
 <body>
@@ -212,6 +240,7 @@ body{background:#08090e;font-family:'Share Tech Mono',monospace;color:#fff;min-h
   <button class="play-again" onclick="startGame()">&#8634; OTRA RONDA</button>
 </div>
 
+<button class="tt-btn" onclick="openTruthTable()">&#128202; TABLAS</button>
 <button class="ref-toggle" onclick="toggleRef()">&#128203; REFERENCIA</button>
 
 <div class="ref-panel" id="ref-panel">
@@ -265,6 +294,19 @@ body{background:#08090e;font-family:'Share Tech Mono',monospace;color:#fff;min-h
         </tr>
       </tbody>
     </table>
+  </div>
+</div>
+
+<div class="tt-overlay" id="tt-overlay" onclick="closeTruthTableOutside(event)">
+  <div class="tt-modal" id="tt-modal">
+    <div class="tt-header">
+      <div class="tt-header-left">
+        <div class="tt-title">&#128202; TABLA DE VERDAD</div>
+        <div class="tt-expr-display" id="tt-expr-display"></div>
+      </div>
+      <button class="tt-close" onclick="closeTruthTable()">&#x2715;</button>
+    </div>
+    <div class="tt-body" id="tt-body"></div>
   </div>
 </div>
 
@@ -591,6 +633,60 @@ function setBulb(val){
 function toggleRef(){
   const panel = document.getElementById('ref-panel');
   panel.classList.toggle('open');
+}
+
+// ── TRUTH TABLE ──
+const exprEvaluators = {
+  'A ∧ B':            (a,b)   => a&b,
+  'A ∨ B':            (a,b)   => a|b,
+  '¬ A':              (a)     => a?0:1,
+  '¬(A ∧ B)':         (a,b)   => (a&b)?0:1,
+  '¬(A ∨ B)':         (a,b)   => (a|b)?0:1,
+  'A ⊕ B':            (a,b)   => a^b,
+  '(A ∧ B) ∨ ¬A':     (a,b)   => (a&b)|(a?0:1),
+  '¬A ∧ ¬B':          (a,b)   => (a?0:1)&(b?0:1),
+  '¬(A ∨ B) ∨ A':     (a,b)   => ((a|b)?0:1)|a,
+  '(A ∨ B) ∧ ¬B':     (a,b)   => (a|b)&(b?0:1),
+  '(A ∧ B) ∨ ¬C':     (a,b,c) => (a&b)|(c?0:1),
+  '(A ∨ B) ∧ ¬C':     (a,b,c) => (a|b)&(c?0:1),
+  '¬((A ∧ B) ∨ C)':   (a,b,c) => ((a&b)|c)?0:1,
+  'A ∨ (B ∧ C)':      (a,b,c) => a|(b&c),
+};
+
+function openTruthTable(){
+  const q = questions[qIdx];
+  const evalFn = exprEvaluators[q.expr];
+  const varNames = Object.keys(q.vars);
+  const nVars = varNames.length;
+  const nRows = Math.pow(2, nVars);
+  const currentVals = varNames.map(v => q.vars[v]);
+
+  let html = '<table class="tt-table"><thead><tr>';
+  varNames.forEach(v => { html += `<th>${v}</th>`; });
+  html += `<th class="tt-th-result">${q.expr}</th></tr></thead><tbody>`;
+
+  for(let i = 0; i < nRows; i++){
+    const vals = [];
+    for(let b = nVars - 1; b >= 0; b--) vals.unshift((i >> b) & 1);
+    const result = evalFn ? evalFn(...vals) : '?';
+    const isCurrent = vals.every((v, idx) => v === currentVals[idx]);
+    html += `<tr class="${isCurrent ? 'tt-current-row' : ''}">`;
+    vals.forEach(v => { html += `<td class="tt-val${v}">${v}</td>`; });
+    html += `<td class="tt-result-col r${result}">${result}</td></tr>`;
+  }
+  html += '</tbody></table>';
+
+  document.getElementById('tt-expr-display').textContent = q.expr;
+  document.getElementById('tt-body').innerHTML = html;
+  document.getElementById('tt-overlay').classList.add('open');
+}
+
+function closeTruthTable(){
+  document.getElementById('tt-overlay').classList.remove('open');
+}
+
+function closeTruthTableOutside(e){
+  if(e.target === document.getElementById('tt-overlay')) closeTruthTable();
 }
 
 startGame();
