@@ -111,6 +111,11 @@ body{background:#08090e;font-family:'Share Tech Mono',monospace;color:#fff;min-h
 .bulb.on{animation:bulbPop .35s ease;filter:drop-shadow(0 0 10px #fbbf24) drop-shadow(0 0 24px #f59e0b)}
 .bulb.off{filter:none}
 
+/* CIRCUIT PANEL */
+.circuit-panel{background:#08090e;border:1px solid #1e2030;border-radius:10px;padding:.9rem;margin-bottom:1rem;opacity:0;transform:translateY(10px);transition:opacity .45s ease,transform .45s ease;display:none;overflow:visible}
+.circuit-panel.show{opacity:1;transform:translateY(0)}
+.circuit-title{font-family:'Orbitron',monospace;font-size:9px;font-weight:900;letter-spacing:3px;color:#22c55e;margin-bottom:.6rem;text-align:center}
+
 /* REFERENCE TABLE */
 .ref-toggle{position:fixed;bottom:0;right:20px;padding:8px 16px;background:#fbbf24;color:#000;font-family:'Orbitron',monospace;font-size:10px;font-weight:900;letter-spacing:2px;border:none;border-radius:8px 8px 0 0;cursor:pointer;z-index:1000;transition:background .15s}
 .ref-toggle:hover{background:#f59e0b}
@@ -251,6 +256,10 @@ body{background:#08090e;font-family:'Share Tech Mono',monospace;color:#fff;min-h
   </div>
 
   <div class="feedback" id="feedback"></div>
+  <div class="circuit-panel" id="circuit-panel">
+    <div class="circuit-title">&#9889; CIRCUITO L&Oacute;GICO</div>
+    <div id="circuit-svg-wrap"></div>
+  </div>
   <button class="next-btn" id="next-btn" onclick="nextStep()">CONTINUAR &rarr;</button>
 </div>
 
@@ -356,26 +365,36 @@ function makeQuestions(){
   const simples = [
     (a,b)=>({level:1, label:'AND', expr:`A ∧ B`, vars:{A:a,B:b},
       steps:[{label:'A ∧ B', calc:`${a} ∧ ${b}`, result:a&b}],
-      answer:a&b}),
+      answer:a&b,
+      circuitTree:{type:'gate',op:'AND',val:a&b,children:[{type:'var',name:'A'},{type:'var',name:'B'}]}}),
     (a,b)=>({level:1, label:'OR', expr:`A ∨ B`, vars:{A:a,B:b},
       steps:[{label:'A ∨ B', calc:`${a} ∨ ${b}`, result:a|b}],
-      answer:a|b}),
+      answer:a|b,
+      circuitTree:{type:'gate',op:'OR',val:a|b,children:[{type:'var',name:'A'},{type:'var',name:'B'}]}}),
     (a)=>({level:1, label:'NOT', expr:`¬ A`, vars:{A:a},
       steps:[{label:'¬A', calc:`¬${a}`, result:a?0:1}],
-      answer:a?0:1}),
+      answer:a?0:1,
+      circuitTree:{type:'gate',op:'NOT',val:a?0:1,children:[{type:'var',name:'A'}]}}),
     (a,b)=>({level:1, label:'NAND', expr:`¬(A ∧ B)`, vars:{A:a,B:b},
       steps:[
         {label:'A ∧ B', calc:`${a} ∧ ${b}`, result:a&b},
         {label:'¬(resultado)', calc:`¬${a&b}`, result:(a&b)?0:1}
-      ], answer:(a&b)?0:1}),
+      ], answer:(a&b)?0:1,
+      circuitTree:{type:'gate',op:'NOT',val:(a&b)?0:1,children:[
+        {type:'gate',op:'AND',val:a&b,children:[{type:'var',name:'A'},{type:'var',name:'B'}]}
+      ]}}),
     (a,b)=>({level:1, label:'NOR', expr:`¬(A ∨ B)`, vars:{A:a,B:b},
       steps:[
         {label:'A ∨ B', calc:`${a} ∨ ${b}`, result:a|b},
         {label:'¬(resultado)', calc:`¬${a|b}`, result:(a|b)?0:1}
-      ], answer:(a|b)?0:1}),
+      ], answer:(a|b)?0:1,
+      circuitTree:{type:'gate',op:'NOT',val:(a|b)?0:1,children:[
+        {type:'gate',op:'OR',val:a|b,children:[{type:'var',name:'A'},{type:'var',name:'B'}]}
+      ]}}),
     (a,b)=>({level:1, label:'XOR', expr:`A ⊕ B`, vars:{A:a,B:b},
       steps:[{label:'A ⊕ B', calc:`${a} ⊕ ${b}`, result:a^b}],
-      answer:a^b}),
+      answer:a^b,
+      circuitTree:{type:'gate',op:'XOR',val:a^b,children:[{type:'var',name:'A'},{type:'var',name:'B'}]}}),
   ];
 
   // Level 2 — compound 2 vars
@@ -385,25 +404,43 @@ function makeQuestions(){
         {label:'A ∧ B', calc:`${a} ∧ ${b}`, result:a&b},
         {label:'¬A', calc:`¬${a}`, result:a?0:1},
         {label:'(A∧B) ∨ ¬A', calc:`${a&b} ∨ ${a?0:1}`, result:(a&b)|(a?0:1)}
-      ], answer:(a&b)|(a?0:1)}),
+      ], answer:(a&b)|(a?0:1),
+      circuitTree:{type:'gate',op:'OR',val:(a&b)|(a?0:1),children:[
+        {type:'gate',op:'AND',val:a&b,children:[{type:'var',name:'A'},{type:'var',name:'B'}]},
+        {type:'gate',op:'NOT',val:a?0:1,children:[{type:'var',name:'A'}]}
+      ]}}),
     (a,b)=>({level:2, label:'COMPUESTA', expr:`¬A ∧ ¬B`, vars:{A:a,B:b},
       steps:[
         {label:'¬A', calc:`¬${a}`, result:a?0:1},
         {label:'¬B', calc:`¬${b}`, result:b?0:1},
         {label:'¬A ∧ ¬B', calc:`${a?0:1} ∧ ${b?0:1}`, result:(a?0:1)&(b?0:1)}
-      ], answer:(a?0:1)&(b?0:1)}),
+      ], answer:(a?0:1)&(b?0:1),
+      circuitTree:{type:'gate',op:'AND',val:(a?0:1)&(b?0:1),children:[
+        {type:'gate',op:'NOT',val:a?0:1,children:[{type:'var',name:'A'}]},
+        {type:'gate',op:'NOT',val:b?0:1,children:[{type:'var',name:'B'}]}
+      ]}}),
     (a,b)=>({level:2, label:'COMPUESTA', expr:`¬(A ∨ B) ∨ A`, vars:{A:a,B:b},
       steps:[
         {label:'A ∨ B', calc:`${a} ∨ ${b}`, result:a|b},
         {label:'¬(A∨B)', calc:`¬${a|b}`, result:(a|b)?0:1},
         {label:'¬(A∨B) ∨ A', calc:`${(a|b)?0:1} ∨ ${a}`, result:((a|b)?0:1)|a}
-      ], answer:((a|b)?0:1)|a}),
+      ], answer:((a|b)?0:1)|a,
+      circuitTree:{type:'gate',op:'OR',val:((a|b)?0:1)|a,children:[
+        {type:'gate',op:'NOT',val:(a|b)?0:1,children:[
+          {type:'gate',op:'OR',val:a|b,children:[{type:'var',name:'A'},{type:'var',name:'B'}]}
+        ]},
+        {type:'var',name:'A'}
+      ]}}),
     (a,b)=>({level:2, label:'COMPUESTA', expr:`(A ∨ B) ∧ ¬B`, vars:{A:a,B:b},
       steps:[
         {label:'A ∨ B', calc:`${a} ∨ ${b}`, result:a|b},
         {label:'¬B', calc:`¬${b}`, result:b?0:1},
         {label:'(A∨B) ∧ ¬B', calc:`${a|b} ∧ ${b?0:1}`, result:(a|b)&(b?0:1)}
-      ], answer:(a|b)&(b?0:1)}),
+      ], answer:(a|b)&(b?0:1),
+      circuitTree:{type:'gate',op:'AND',val:(a|b)&(b?0:1),children:[
+        {type:'gate',op:'OR',val:a|b,children:[{type:'var',name:'A'},{type:'var',name:'B'}]},
+        {type:'gate',op:'NOT',val:b?0:1,children:[{type:'var',name:'B'}]}
+      ]}}),
   ];
 
   // Level 3 — compound 3 vars
@@ -415,7 +452,11 @@ function makeQuestions(){
           {label:'A ∧ B', calc:`${a} ∧ ${b}`, result:s1},
           {label:'¬C', calc:`¬${c}`, result:s2},
           {label:'(A∧B) ∨ ¬C', calc:`${s1} ∨ ${s2}`, result:ans}
-        ], answer:ans};},
+        ], answer:ans,
+        circuitTree:{type:'gate',op:'OR',val:ans,children:[
+          {type:'gate',op:'AND',val:s1,children:[{type:'var',name:'A'},{type:'var',name:'B'}]},
+          {type:'gate',op:'NOT',val:s2,children:[{type:'var',name:'C'}]}
+        ]}};},
     (a,b,c)=>{
       const s1=a|b, s2=c?0:1, ans=s1&s2;
       return {level:3, label:'NIVEL 3', expr:`(A ∨ B) ∧ ¬C`, vars:{A:a,B:b,C:c},
@@ -423,7 +464,11 @@ function makeQuestions(){
           {label:'A ∨ B', calc:`${a} ∨ ${b}`, result:s1},
           {label:'¬C', calc:`¬${c}`, result:s2},
           {label:'(A∨B) ∧ ¬C', calc:`${s1} ∧ ${s2}`, result:ans}
-        ], answer:ans};},
+        ], answer:ans,
+        circuitTree:{type:'gate',op:'AND',val:ans,children:[
+          {type:'gate',op:'OR',val:s1,children:[{type:'var',name:'A'},{type:'var',name:'B'}]},
+          {type:'gate',op:'NOT',val:s2,children:[{type:'var',name:'C'}]}
+        ]}};},
     (a,b,c)=>{
       const s1=a&b, s2=s1|c, ans=s2?0:1;
       return {level:3, label:'NIVEL 3', expr:`¬((A ∧ B) ∨ C)`, vars:{A:a,B:b,C:c},
@@ -431,14 +476,24 @@ function makeQuestions(){
           {label:'A ∧ B', calc:`${a} ∧ ${b}`, result:s1},
           {label:'(A∧B) ∨ C', calc:`${s1} ∨ ${c}`, result:s2},
           {label:'¬((A∧B)∨C)', calc:`¬${s2}`, result:ans}
-        ], answer:ans};},
+        ], answer:ans,
+        circuitTree:{type:'gate',op:'NOT',val:ans,children:[
+          {type:'gate',op:'OR',val:s2,children:[
+            {type:'gate',op:'AND',val:s1,children:[{type:'var',name:'A'},{type:'var',name:'B'}]},
+            {type:'var',name:'C'}
+          ]}
+        ]}};},
     (a,b,c)=>{
       const s1=b&c, s2=a|s1;
       return {level:3, label:'NIVEL 3', expr:`A ∨ (B ∧ C)`, vars:{A:a,B:b,C:c},
         steps:[
           {label:'B ∧ C', calc:`${b} ∧ ${c}`, result:s1},
           {label:'A ∨ (B∧C)', calc:`${a} ∨ ${s1}`, result:s2}
-        ], answer:s2};},
+        ], answer:s2,
+        circuitTree:{type:'gate',op:'OR',val:s2,children:[
+          {type:'var',name:'A'},
+          {type:'gate',op:'AND',val:s1,children:[{type:'var',name:'B'},{type:'var',name:'C'}]}
+        ]}};},
   ];
 
   const a=rnd(),b=rnd(),c=rnd();
@@ -490,6 +545,7 @@ function renderDots(){
 
 function loadQuestion(){
   stepIdx=0; stepAnswered=false; qAnswered=false;
+  hideCircuit();
   setBulb(null);
   const q=questions[qIdx];
   maxLevel=Math.max(maxLevel,q.level);
@@ -585,6 +641,7 @@ function answer(val){
     }
     updateDot(qIdx, isCorrect);
     updateScoreLabel();
+    showCircuit(q);
     document.getElementById('next-btn').classList.add('show');
     document.getElementById('next-btn').textContent = qIdx<questions.length-1 ? 'SIGUIENTE PREGUNTA →' : 'VER RESULTADOS →';
     qAnswered=true;
@@ -825,6 +882,154 @@ function closeTruthTable(){
 
 function closeTruthTableOutside(e){
   if(e.target === document.getElementById('tt-overlay')) closeTruthTable();
+}
+
+// ── CIRCUIT RENDERER ──
+function buildCircuitSVG(q) {
+  const tree = q.circuitTree;
+  if (!tree) return '';
+
+  const TOP=38, RH=54, VX=55, CW=118, GW=25, GH=16, NH=13;
+
+  // Collect unique variable names (DFS left-to-right)
+  const vars=[];
+  const cv=n=>n.type==='var'?(!vars.includes(n.name)&&vars.push(n.name)):n.children.forEach(cv);
+  cv(tree);
+
+  // Variable y positions
+  const vy={};
+  vars.forEach((v,i)=>{ vy[v]=TOP+i*RH; });
+
+  // Layout: compute lvl (depth from leaves), cx, cy for each node
+  const lay=n=>{
+    if(n.type==='var'){n.lvl=0;n.cx=VX;n.cy=vy[n.name];return 0;}
+    n.lvl=Math.max(...n.children.map(lay))+1;
+    n.cy=n.children.reduce((s,c)=>s+c.cy,0)/n.children.length;
+    n.cx=VX+n.lvl*CW;
+    return n.lvl;
+  };
+  lay(tree);
+
+  const svgH=Math.max(112,TOP*2+(vars.length-1)*RH+44);
+  const bx=VX+tree.lvl*CW+56;
+  const svgW=bx+50;
+
+  // Wire color
+  const wc=v=>v===1?'#22c55e':v===0?'#ef4444':'#374151';
+
+  // Routed path (L-shape with midpoint)
+  const rt=(fx,fy,tx,ty)=>{
+    const f1=+(+fx).toFixed(1),f2=+(+fy).toFixed(1),t1=+(+tx).toFixed(1),t2=+(+ty).toFixed(1);
+    if(Math.abs(f2-t2)<0.5) return `M ${f1} ${f2} H ${t1}`;
+    const mx=+((f1+t1)/2).toFixed(1);
+    return `M ${f1} ${f2} H ${mx} V ${t2} H ${t1}`;
+  };
+
+  // Gate output x (right pin)
+  const outX=n=>{
+    const bubble=['NOT','NAND','NOR'].includes(n.op);
+    const gw=n.op==='NOT'?NH+8:GW;
+    return n.cx+gw+(bubble?9:0);
+  };
+
+  // Gate input pins (left side)
+  const inPts=n=>{
+    const gw=n.op==='NOT'?NH+8:GW;
+    if(n.children.length===1) return [{x:n.cx-gw,y:n.cy}];
+    return [{x:n.cx-gw,y:n.cy-10},{x:n.cx-gw,y:n.cy+10}];
+  };
+
+  const wires=[],gates=[];
+
+  const draw=(n,ppx,ppy)=>{
+    if(n.type==='var'){
+      if(ppx!=null) wires.push(`<path d="${rt(VX+3,n.cy,ppx,ppy)}" fill="none" stroke="${wc(q.vars[n.name])}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>`);
+      return;
+    }
+    const {cx,cy,op,val,children}=n;
+    const bubble=['NOT','NAND','NOR'].includes(op);
+    const isNot=op==='NOT';
+    const gw=isNot?NH+8:GW, gh=isNot?NH:GH;
+    const vc=wc(val);
+    const ox=cx+gw+(bubble?9:0);
+
+    let sp='',ex='';
+    switch(op){
+      case 'AND': case 'NAND':
+        sp=`M ${cx-gw} ${cy-gh} L ${cx-gw} ${cy+gh} L ${cx} ${cy+gh} Q ${cx+gw} ${cy+gh} ${cx+gw} ${cy} Q ${cx+gw} ${cy-gh} ${cx} ${cy-gh} Z`;
+        if(bubble) ex=`<circle cx="${cx+gw+5}" cy="${cy}" r="4" fill="#08090e" stroke="${vc}" stroke-width="1.5"/>`;
+        break;
+      case 'OR': case 'NOR':
+        sp=`M ${cx-gw} ${cy-gh} Q ${cx-gw+7} ${cy} ${cx-gw} ${cy+gh} Q ${cx} ${cy+gh-4} ${cx+gw} ${cy} Q ${cx} ${cy-gh+4} ${cx-gw} ${cy-gh} Z`;
+        if(bubble) ex=`<circle cx="${cx+gw+5}" cy="${cy}" r="4" fill="#08090e" stroke="${vc}" stroke-width="1.5"/>`;
+        break;
+      case 'XOR':
+        sp=`M ${cx-gw} ${cy-gh} Q ${cx-gw+7} ${cy} ${cx-gw} ${cy+gh} Q ${cx} ${cy+gh-4} ${cx+gw} ${cy} Q ${cx} ${cy-gh+4} ${cx-gw} ${cy-gh} Z`;
+        ex=`<path d="M ${cx-gw-6} ${cy-gh} Q ${cx-gw+1} ${cy} ${cx-gw-6} ${cy+gh}" fill="none" stroke="${vc}" stroke-width="1.5"/>`;
+        break;
+      case 'NOT':
+        sp=`M ${cx-gw} ${cy-gh} L ${cx-gw} ${cy+gh} L ${cx+gw-3} ${cy} Z`;
+        ex=`<circle cx="${cx+gw+5}" cy="${cy}" r="4" fill="#08090e" stroke="${vc}" stroke-width="1.5"/>`;
+        break;
+    }
+    gates.push(`<path d="${sp}" fill="#08090e" stroke="${vc}" stroke-width="1.5"/>`);
+    if(ex) gates.push(ex);
+    gates.push(`<text x="${cx}" y="${cy+4}" font-family="Orbitron,monospace" font-size="7" fill="${vc}" text-anchor="middle" letter-spacing="0.5">${op}</text>`);
+
+    // Wire to parent
+    if(ppx!=null) wires.push(`<path d="${rt(ox,cy,ppx,ppy)}" fill="none" stroke="${vc}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>`);
+
+    // Recurse children
+    inPts(n).forEach((p,i)=>draw(children[i],p.x,p.y));
+  };
+
+  draw(tree,null,null);
+
+  // Root → bulb wire
+  const rpx=outX(tree);
+  wires.push(`<path d="${rt(rpx,tree.cy,bx-20,tree.cy)}" fill="none" stroke="${wc(tree.val)}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>`);
+
+  // Variable labels and output dots
+  const varEls=vars.map(v=>{
+    const y=vy[v],val=q.vars[v],vc=wc(val);
+    return `<text x="${VX-13}" y="${y-5}" font-family="Orbitron,monospace" font-size="11" fill="${vc}" text-anchor="middle" font-weight="700">${v}</text>`+
+           `<text x="${VX-13}" y="${y+9}" font-family="Share Tech Mono,monospace" font-size="10" fill="${vc}" text-anchor="middle">${val}</text>`+
+           `<circle cx="${VX+3}" cy="${y}" r="3.5" fill="${vc}"/>`;
+  }).join('\n');
+
+  // Bulb
+  const bv=tree.val,bc=bv===1?'#fbbf24':'#374151',bs=bv===1?'#f59e0b':'#4b5563',bb=bv===1?'#92400e':'#1f2937';
+  const bf=bv===1?'filter="url(#cg)"':'';
+  const defs=bv===1?`<defs><filter id="cg" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>`:'';
+  const bulbEl=`<g transform="translate(${bx},${tree.cy})" ${bf}>
+  <path d="M 0 -19 C -12 -19 -18 -10 -18 0 C -18 9 -13 15 -8 17 L -8 21 L 8 21 L 8 17 C 13 15 18 9 18 0 C 18 -10 12 -19 0 -19 Z" fill="${bc}" stroke="${bs}" stroke-width="1.5"/>
+  ${bv===1?`<path d="M -3 15 L -3 8 Q 0 5 3 8 L 3 15" fill="none" stroke="rgba(0,0,0,0.45)" stroke-width="1.2"/>`:''}
+  <rect x="-8" y="21" width="16" height="4" rx="1" fill="${bb}"/>
+  <rect x="-7" y="25" width="14" height="3" rx="1" fill="${bb}"/>
+  <text x="0" y="38" font-family="Orbitron,monospace" font-size="8" fill="${bv===1?'#fbbf24':'#374151'}" text-anchor="middle" font-weight="900" letter-spacing="1">${bv===1?'ON':'OFF'}</text>
+</g>`;
+
+  return `<svg viewBox="0 0 ${svgW} ${svgH}" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-height:230px;display:block;overflow:visible">
+${defs}
+${wires.join('\n')}
+${gates.join('\n')}
+${varEls}
+${bulbEl}
+</svg>`;
+}
+
+function showCircuit(q){
+  const panel=document.getElementById('circuit-panel');
+  document.getElementById('circuit-svg-wrap').innerHTML=buildCircuitSVG(q);
+  panel.style.display='block';
+  requestAnimationFrame(()=>requestAnimationFrame(()=>panel.classList.add('show')));
+}
+
+function hideCircuit(){
+  const p=document.getElementById('circuit-panel');
+  p.classList.remove('show');
+  p.style.display='none';
+  document.getElementById('circuit-svg-wrap').innerHTML='';
 }
 
 startGame();
